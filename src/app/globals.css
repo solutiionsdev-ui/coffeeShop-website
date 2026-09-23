@@ -1,0 +1,637 @@
+/* `source("../")` limits class detection to `src/` (this file lives in src/app).
+   Without it Tailwind v4 scans the whole repo — including obsidian/ and .claude/,
+   where documented class *patterns* like duration-[var(--duration-*)] parse as
+   real candidates and emit CSS warnings. Docs are not a source of utilities. */
+@import "tailwindcss" source("../");
+
+/* ---------------------------------------------------------------------------
+   TIER 1 — PRIMITIVES  (`--raw-*`)
+   Raw literal values. The only tier allowed to contain a hex/px/ms literal.
+   Never referenced in markup, never bound into @theme. Rename freely.
+   Grammar: --raw-<category>-<name>[-<shade>]
+   See obsidian/frontend/design-system.md → "Token naming convention".
+   --------------------------------------------------------------------------- */
+:root {
+  --raw-color-white: #ffffff;
+  --raw-color-neutral-100: #ededed;
+  --raw-color-neutral-900: #171717;
+  --raw-color-neutral-950: #0a0a0a;
+
+  --raw-duration-fast: 150ms;
+  --raw-duration-normal: 250ms;
+  --raw-duration-slow: 300ms;
+
+  /* Brand — Figma "Concept 7" frame 1276:566 (brewns coffee house). */
+  --raw-color-espresso-950: #070707; /* hero canvas */
+  --raw-color-amber-500: #d58c3d; /* ORDER ONLINE status dot — node 1312:289 */
+  --raw-color-espresso-900: #171715; /* swirl on the dark sections — node 2173:598 */
+  --raw-color-espresso-900-half: rgba(
+    23,
+    23,
+    21,
+    0.5
+  ); /* footer swirl — 2190:1194 */
+  --raw-color-roast-900: #2a1a0f; /* preloader coffee, bottom of the pour */
+  --raw-color-roast-500: #b07a45; /* preloader coffee, crema at the surface */
+  --raw-color-bone-50: #f1f1ef; /* menu section surface — node 2149:5 */
+  --raw-color-bone-100: #e7e5e3; /* menu section swirl — node 2161:275 */
+
+  /* Opalesce background layers. The gradient runs behind two blocks now, so
+     the fallback is shared and each block brings its own readability scrim —
+     they put their copy in different places, so one scrim cannot serve both.
+     Tune the stops and alphas here, not in the component. The fallback runs in
+     the same palette as docs/opalesce.md's CONFIG and shows until the first
+     frame lands — or permanently, if WebGL2 is unavailable. */
+  --raw-gradient-hero-scrim: linear-gradient(
+    to right,
+    rgba(7, 7, 7, 0.75) 0%,
+    rgba(7, 7, 7, 0.35) 35%,
+    transparent 60%
+  );
+  /* Philosophy puts copy in the top band and the bottom band and leaves the
+     cup's middle clear, so its scrim runs vertically rather than to the right. */
+  --raw-gradient-philosophy-scrim: linear-gradient(
+    to bottom,
+    rgba(7, 7, 7, 0.86) 0%,
+    rgba(7, 7, 7, 0.6) 26%,
+    rgba(7, 7, 7, 0.38) 46%,
+    rgba(7, 7, 7, 0.62) 72%,
+    rgba(7, 7, 7, 0.88) 100%
+  );
+  --raw-gradient-opalesce-fallback: linear-gradient(
+    120deg,
+    #070707 0%,
+    #110b07 35%,
+    #2c1a11 65%,
+    #6e3e22 100%
+  );
+
+  /* Type scale — Figma 1276:566. Design px / 16 (the 1440 grid base),
+     so each rem matches the frame 1:1 at 1440px wide. */
+  --raw-font-size-label: 0.875rem; /* 14px — eyebrow */
+  --raw-font-size-base: 1rem; /* 16px — nav, lede, info bar */
+  --raw-font-size-script: 5.625rem; /* 90px — "moment" */
+  --raw-font-size-fine: 0.75rem; /* 12px — footer fine print */
+  --raw-font-size-headline: 4rem; /* 64px — philosophy headline */
+  --raw-font-size-display: 6.25rem; /* 100px — headline */
+
+  /* The board is 1440 wide and there is no phone or tablet frame, so the big
+     sizes are re-cut for the 360 and 1024 grid bases rather than scaled from
+     the desktop ones: 100px of display type on a 360 board is four characters
+     to a line. Body sizes are unchanged — 1rem is 16px on every base, which is
+     already the right reading size. */
+  --raw-font-size-display-phone: 2.375rem; /* 38px on the 360 base */
+  --raw-font-size-display-hero-phone: 3.25rem; /* 52px — the hero only */
+  --raw-font-size-display-tablet: 4rem; /* 64px on the 1024 base */
+  --raw-font-size-headline-phone: 2rem; /* 32px */
+  --raw-font-size-headline-tablet: 3rem; /* 48px */
+  --raw-font-size-script-phone: 3.85rem; /* 62px */
+  --raw-font-size-script-tablet: 7rem; /* 112px */
+  --raw-font-size-display-hero-tablet: 6rem; /* 96px — the hero only */
+  /* The preloader's count. It is the one figure on that screen, so it runs a
+     step above the display scale rather than borrowing it. */
+  --raw-font-size-count-phone: 5rem; /* 80px */
+  --raw-font-size-count-tablet: 8rem; /* 128px */
+  --raw-font-size-count: 11rem; /* 176px */
+  --raw-font-size-lede-tablet: 1.125rem; /* 18px — 16 sits small under the 64px display */
+
+  --raw-leading-flush: 0.8; /* CTA label, trimmed to cap height */
+  --raw-leading-headline: 0.9; /* display + script */
+  --raw-leading-copy: 1.2; /* nav, lede, info bar */
+
+  /* Figma tracking is absolute px; stored here as em so it survives scaling.
+     -0.48px@16 = -3px@100 = -2.7px@90 = -0.03em. */
+  --raw-tracking-tight: -0.03em;
+  --raw-tracking-label: 0.1em; /* 1.4px@14 */
+  --raw-tracking-slash: -0.23em; /* -3.2px@14 — the "//" glyph pair */
+  --raw-tracking-slash-space: -0.115em; /* -1.6px@14 — space after "//" */
+
+  /* Hero frame geometry — Figma 1276:566 (1440x800). Values the 4px spacing
+     scale cannot express; everything on-scale uses Tailwind's own utilities. */
+  --raw-size-hero-copy: 30.4375rem; /* 487px — headline column */
+  --raw-size-hero-cta: 9.3125rem; /* 149px — explore-menu block */
+  --raw-size-hours: 7.625rem; /* 122px */
+  --raw-size-hero-address: 9.9375rem; /* 159px */
+  --raw-size-hero-social: 5.3125rem; /* 85px */
+  --raw-size-hero-rule: 2.375rem; /* 38px — info-bar divider */
+  --raw-size-dot: 0.3125rem; /* 5px — ORDER ONLINE bullet */
+  --raw-size-logo-width: 6.4931rem; /* 103.889px */
+  --raw-size-logo-height: 1.375rem; /* 22px */
+  --raw-size-hero-media-width: 72.0625rem; /* 1153px */
+  --raw-size-hero-media-height: 61rem; /* 976px */
+  --raw-size-hero-media-x: 24.0625rem; /* 385px */
+  /* How far the still hangs past the frame's right edge on the board:
+     385 + 1153 - 1440. Anchoring the still by this instead of by its x keeps the
+     crop proportional — placed by x, a narrower window cut the cup in half
+     because the frame shrank while the overhang did not. */
+  --raw-size-hero-media-overhang: 6.125rem; /* 98px */
+  /* A small step right on narrow desktops, on top of the overhang. Keeping the
+     crop proportional puts the still further from the right edge than the board
+     reads at 1024, so it gains up to 40px there and loses it linearly by 1280 —
+     zero from there up, which leaves the reference frame alone. */
+  --raw-size-hero-media-nudge: max(
+    0px,
+    min(40px, calc((1280px - 100vw) * 0.15625))
+  );
+  --raw-size-hero-media-y: 1.8125rem; /* 29px */
+  --raw-size-swirl-width: 139.6875rem; /* 2235px */
+  --raw-size-swirl-height: 46.5625rem; /* 745px */
+  --raw-size-swirl-x: 8.25rem; /* 132px */
+  --raw-size-swirl-y: -1.5rem; /* -24px */
+  /* "moment" overlaps the headline's last line on every base, but the headline
+     wraps to a different number of lines on each, so the offsets are measured
+     per base rather than scaled. */
+  /* Width of the copy column on the tablet base. It is a measurement, not a
+     preference: the clipped headline reveal needs the line to wrap, and a wider
+     column lets "COFFEE FOR YOUR" sit on one line, where the engine leaves the
+     single line in its out-state and the headline never appears. */
+  --raw-size-hero-copy-tablet: 42rem; /* 480px on the 1024 base */
+  --raw-size-hero-script-x-phone: 9.75rem; /* 156px on the 360 base */
+  --raw-size-hero-script-y-phone: 5.25rem; /* 84px */
+  --raw-size-hero-script-x-tablet: 16.25rem; /* 260px — clear of YOUR at 96px */
+  --raw-size-hero-script-y-tablet: 7.8125rem; /* 136px — sits the script on YOUR's baseline */
+  --raw-size-hero-script-x: 17.375rem; /* 278px — "moment" offset in the grid */
+  --raw-size-hero-script-y: 13.1875rem; /* 211px */
+  --raw-size-hero-copy-rise: 1.75rem; /* 28px — copy sits above the mid-line */
+  --raw-size-underline: 0.1125rem; /* 1.8px — explore-menu rule */
+  --raw-size-cap-16: 0.6875rem; /* 11px — label row, trimmed to cap height */
+  --raw-size-cta-block: 1.1875rem; /* 19px — label row + rule */
+  --raw-size-cap-12: 0.5rem; /* 8px — cap height of the 12px mono label */
+
+  /* Menu block geometry — Figma "Block 2" 2149:5 (1440x800). */
+  --raw-size-menu-intro: 32.4375rem; /* 519px — heading column */
+  --raw-size-menu-intro-y: 6.625rem; /* 106px */
+  --raw-size-menu-lede: 10.875rem; /* 174px */
+  --raw-size-menu-lede-x: 21.625rem; /* 346px */
+  --raw-size-menu-lede-y: 14.125rem; /* 226px */
+  --raw-size-menu-cta: 10.0625rem; /* 161px */
+  --raw-size-menu-cta-x: 77.4375rem; /* 1239px */
+  --raw-size-menu-cta-y: 24.625rem; /* 394px */
+  --raw-size-menu-cards-y: 28.3125rem; /* 453px */
+  --raw-size-menu-card-height: 19.1875rem; /* 307px */
+
+  /* Receipt (hover state, node 2229:207). Figma reports the rotated rect's
+     top-left CORNER as x/y (1239, 279.54) but its axis-aligned BOUNDING BOX as
+     width/height (566.779x685.661) — not the same rectangle. Solving those
+     against the asset's 832x1890 aspect gives the unrotated box, its top-left
+     and the angle below; verified by differencing the two Figma boards. */
+  --raw-size-menu-receipt-width: 17.41125rem; /* 278.58px */
+  --raw-size-menu-receipt-height: 39.553125rem; /* 632.85px */
+  --raw-size-menu-receipt-x: 86.44375rem; /* 1383.10px */
+  --raw-size-menu-receipt-y: 10.0725rem; /* 161.16px */
+  /* Footer geometry — Figma "Concept 6" 2173:655 (1440x385). */
+  /* Height of the design board, in rem.
+     The board is 1440x800 and every coordinate inside it is a rem, so a section
+     that is 50rem tall is a uniform scale of the board at any width — including
+     above 1440, where the root font-size is damped rather than proportional.
+     Tying the section to the viewport height instead made the composition
+     depend on the window's aspect ratio: at 1440x800 they agreed, and anywhere
+     else the board shrank horizontally while the section did not, which is where
+     the 124px of slack under the card row came from. */
+  --raw-size-board-height: 50rem;
+  /* The order block's frame below the 1280 board. The machine hangs from the
+     headline's own top line, so the frame is however tall the printer plus the
+     fed receipt come to from there, plus the block's 40px foot — which is also
+     where the copy lands, level with the paper's torn edge. */
+  --raw-size-order-frame: 53.375rem; /* 854px at the 1440 base */
+  /* How far the product still's crop box is lifted off the bottom of the card's
+     media area. It moves the BOX, not the photograph inside it — shifting the
+     photograph within a fixed box just trades a trim at the bottom for one at
+     the top, which is exactly what it did before this was corrected. Zero on the
+     board: there the card is wide enough that a base sitting on the media
+     area's bottom edge reads as the design's own crop. Between 1280 and 1439
+     the card row scales with the viewport while the still scales with the root
+     size, so the product is ~4% larger against a narrower card and the same
+     flush base reads as a cut. 1024 divides the same row four ways in a still
+     narrower frame, so it reads as a cut there too. Overridden for both. */
+  --raw-size-menu-still-lift: 0.75rem;
+  /* Multiplier on the still's crop box. One on the board — the frames are the
+     photographs' own. Below 1280 the card is narrower than the root-scaled
+     still expects, so the product is trimmed back a little to sit inside it. */
+  --raw-size-menu-still-scale: 1;
+  /* Ceiling on the crop window's width. Off above the phone grid, where the
+     board's own frames are narrower than the card that holds them. */
+  --raw-size-menu-still-max: none;
+  --raw-size-footer-height: 24.0625rem; /* 385px */
+  --raw-size-footer-tagline: 6.5rem; /* 104px */
+  --raw-size-footer-tagline-y: 6.375rem; /* 102px */
+  --raw-size-footer-nav-x: 23.9375rem; /* 383px */
+  /* Distance from the nav column to the contact column. Below the desktop board
+     the two sit in one grid, so on it the contact block is placed relative to
+     the nav block rather than to the band. 1183 - 383. */
+  --raw-size-footer-contact-offset: 50rem; /* 800px */
+  /* Distance from the frame's right edge to the right column, not the column's
+     x on the board. Once the type scale is damped the board is rendered wider
+     than the window, so anything placed by its board x walks off the edge; the
+     right column has to hang off the right instead. 1440 - 1183. */
+  --raw-size-footer-right-block: 16.0625rem; /* 257px */
+  /* Block 5 copy. It sits on the page's rem grid, not inside the scaled
+     printer scene — the scene scales to COVER the viewport and the grid scales
+     with the root font size, so anything measured in scene px drifts off the
+     page's left gutter as soon as the window stops being 1440x800. */
+  --raw-size-order-headline: 25.0625rem; /* 401px */
+  --raw-size-order-headline-y: 7.875rem; /* 126px */
+  --raw-size-order-note: 10.1875rem; /* 163px */
+  --raw-size-order-aside: 20.6875rem; /* 331px */
+  --raw-size-order-aside-gap: 3.125rem; /* 50px */
+  --raw-size-order-cta: 10.0625rem; /* 161px */
+  --raw-size-footer-col: 7.625rem; /* 122px */
+  --raw-size-footer-rule-top: 12.8125rem; /* 205px */
+  --raw-size-footer-row-y: 15.3125rem; /* 245px */
+  --raw-size-footer-rule-bottom: 20.1875rem; /* 323px */
+  --raw-size-footer-legal-y: 21.6875rem; /* 347px */
+  --raw-size-footer-address: 10rem; /* 160px */
+  --raw-size-footer-address-b: 37.9375rem; /* 607px */
+  --raw-size-footer-address-c: 53.0625rem; /* 849px */
+  --raw-size-footer-divider-a: 35.9375rem; /* 575px */
+  --raw-size-footer-divider-b: 51.0625rem; /* 817px */
+  --raw-size-footer-dot: 0.25rem; /* 4px */
+
+  --raw-angle-menu-receipt: -31.2678deg;
+
+  /* Locations block geometry — Figma "Block 3_v2" 2164:283 (1440x800). */
+  --raw-size-locations-dial: 40.875rem; /* 654px — clock face */
+  --raw-size-locations-dial-y: 6.625rem; /* 106px */
+  --raw-size-locations-cup-width: 17.5rem; /* 280px */
+  --raw-size-locations-cup-height: 26.25rem; /* 420px */
+  --raw-size-locations-cup-y: 11.875rem; /* 190px */
+  --raw-size-locations-list: 11.1875rem; /* 179px — address column */
+  --raw-size-locations-list-y: 37.375rem; /* 598px */
+  --raw-size-locations-hours-y: 45.125rem; /* 722px */
+
+  /* Philosophy block geometry — Figma "Block 4" 2173:591 (1440x800). */
+  --raw-size-philosophy-headline: 49.25rem; /* 788px */
+  --raw-size-philosophy-headline-y: 6.625rem; /* 106px */
+  --raw-size-philosophy-cup-x: 14.625rem; /* 234px */
+  --raw-size-philosophy-cup-y: 19.5625rem; /* 313px — the metadata's y, not the
+     311 get_design_context reports; the render agrees with the metadata */
+  --raw-size-philosophy-cup-width: 20.125rem; /* 322px */
+  --raw-size-philosophy-cup-height: 30.125rem; /* 482px */
+  --raw-size-philosophy-lede: 20.6875rem; /* 331px */
+  --raw-size-philosophy-lede-x: 38.3125rem; /* 613px */
+  --raw-size-philosophy-lede-y: 41.5625rem; /* 665px */
+  --raw-size-philosophy-claims: 10.75rem; /* 172px */
+  --raw-size-philosophy-claims-y: 44.0625rem; /* 705px */
+  --raw-size-philosophy-eyebrow-y: 46.4375rem; /* 743px — top-anchored, so it
+     stays level with the lede's last line at any viewport height */ /* counter-clockwise; the sign is not
+     recoverable from the bounding box, it comes from matching the corners */
+  --raw-size-arrow-width: 0.763356rem; /* 12.2137px — arrow artboard */
+  --raw-size-arrow-height: 0.828444rem; /* 13.2551px */
+}
+
+/* The footer's left half is placed in rem, so it shrinks with the root size,
+   while the contact column hangs off 100% and shrinks with the window. Between
+   1024 and 1279 the window shrinks faster and the two halves close on each
+   other — at 1024 the third address ended 8px short of OPEN DAILY. Over that
+   band the left half is placed on the same fraction of the width the board
+   gives it (x / 1440), so the gutter between them scales like everything else.
+   Declared unlayered: a rule inside @layer base loses to the :root above. */
+/* The still lags 22px behind its card on the way in, and on the tablet grid the
+   crop window has no headroom under the product at all — so the whole lag was
+   spent cutting the base off while the row scrolled in. Lifting the window by
+   the length of the travel gives the lag somewhere to go. */
+@media (max-width: 39.98rem) {
+  :root {
+    --raw-size-menu-still-lift: 1.375rem;
+    --raw-size-menu-still-max: 100%;
+  }
+}
+
+@media (min-width: 40rem) and (max-width: 63.98rem) {
+  :root {
+    --raw-size-menu-still-lift: 1.375rem;
+    --raw-size-menu-still-max: 100%;
+  }
+}
+
+@media (min-width: 64rem) and (max-width: 79.98rem) {
+  :root {
+    --raw-size-footer-nav-x: 26.597vw; /* 383 / 1440 */
+    --raw-size-footer-address-b: 42.153vw; /* 607 / 1440 */
+    --raw-size-footer-address-c: 58.958vw; /* 849 / 1440 */
+    --raw-size-footer-divider-a: 39.931vw; /* 575 / 1440 */
+    --raw-size-footer-divider-b: 56.736vw; /* 817 / 1440 */
+  }
+}
+
+/* Product stills sit a touch higher between 1024 and 1439 — see
+   --raw-size-menu-still-lift. Declared outside @layer base on purpose: a
+   layered rule loses to the unlayered :root above it no matter the order. */
+@media (min-width: 64rem) and (max-width: 79.98rem) {
+  :root {
+    --raw-size-menu-still-lift: 0.9rem;
+    --raw-size-menu-still-scale: 0.92;
+  }
+}
+
+@media (min-width: 80rem) and (max-width: 89.98rem) {
+  :root {
+    --raw-size-menu-still-lift: 0.75rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   TIER 2 — SEMANTIC  (role names, no namespace prefix)
+   Purpose, not appearance. Always `var(--raw-*)` — never a literal.
+   This is the themeable layer: dark mode overrides happen HERE, which is why
+   these are separate from the @theme bindings below (see the note there).
+   Grammar: --<role>[-<variant>][-<state>]
+   --------------------------------------------------------------------------- */
+:root {
+  --background: var(--raw-color-espresso-950);
+  --foreground: var(--raw-color-white);
+
+  --accent: var(--raw-color-amber-500);
+  --coffee-deep: var(--raw-color-roast-900);
+  --coffee-crema: var(--raw-color-roast-500);
+  --surface-backdrop: var(--raw-color-espresso-900);
+  --surface-backdrop-soft: var(--raw-color-espresso-900-half);
+
+  --hero-scrim: var(--raw-gradient-hero-scrim);
+  --gradient-opalesce-fallback: var(--raw-gradient-opalesce-fallback);
+  --philosophy-scrim: var(--raw-gradient-philosophy-scrim);
+
+  /* The menu block inverts the page: light surface, dark type. */
+  --surface-inverse: var(--raw-color-bone-50);
+  --surface-inverse-backdrop: var(--raw-color-bone-100);
+  --foreground-inverse: var(--raw-color-espresso-950);
+
+  --duration-fast: var(--raw-duration-fast);
+  --duration-normal: var(--raw-duration-normal);
+  --duration-slow: var(--raw-duration-slow);
+
+  --font-size-label: var(--raw-font-size-label);
+  --font-size-base: var(--raw-font-size-base);
+  --font-size-script: var(--raw-font-size-script);
+  --font-size-fine: var(--raw-font-size-fine);
+  --font-size-headline: var(--raw-font-size-headline);
+  --font-size-display-phone: var(--raw-font-size-display-phone);
+  --font-size-display-hero-phone: var(--raw-font-size-display-hero-phone);
+  --font-size-display-tablet: var(--raw-font-size-display-tablet);
+  --font-size-headline-phone: var(--raw-font-size-headline-phone);
+  --font-size-headline-tablet: var(--raw-font-size-headline-tablet);
+  --font-size-script-phone: var(--raw-font-size-script-phone);
+  --font-size-script-tablet: var(--raw-font-size-script-tablet);
+  --font-size-display-hero-tablet: var(--raw-font-size-display-hero-tablet);
+  --font-size-count-phone: var(--raw-font-size-count-phone);
+  --font-size-count-tablet: var(--raw-font-size-count-tablet);
+  --font-size-count: var(--raw-font-size-count);
+  --font-size-lede-tablet: var(--raw-font-size-lede-tablet);
+  --font-size-display: var(--raw-font-size-display);
+
+  --line-height-flush: var(--raw-leading-flush);
+  --line-height-headline: var(--raw-leading-headline);
+  --line-height-copy: var(--raw-leading-copy);
+
+  --letter-spacing-tight: var(--raw-tracking-tight);
+  --letter-spacing-label: var(--raw-tracking-label);
+  --letter-spacing-slash: var(--raw-tracking-slash);
+  --letter-spacing-slash-space: var(--raw-tracking-slash-space);
+
+  --size-hero-copy: var(--raw-size-hero-copy);
+  --size-hero-cta: var(--raw-size-hero-cta);
+  --size-hours: var(--raw-size-hours);
+  --size-hero-address: var(--raw-size-hero-address);
+  --size-hero-social: var(--raw-size-hero-social);
+  --size-hero-rule: var(--raw-size-hero-rule);
+  --size-dot: var(--raw-size-dot);
+  --size-logo-width: var(--raw-size-logo-width);
+  --size-logo-height: var(--raw-size-logo-height);
+  --size-hero-media-width: var(--raw-size-hero-media-width);
+  --size-hero-media-height: var(--raw-size-hero-media-height);
+  --size-hero-media-x: var(--raw-size-hero-media-x);
+  --size-hero-media-overhang: var(--raw-size-hero-media-overhang);
+  --size-hero-media-nudge: var(--raw-size-hero-media-nudge);
+  --size-hero-media-y: var(--raw-size-hero-media-y);
+  /* The still drops with the same surplus the boards do, so on a window taller
+     than the board's proportion it sits where 1440 puts it rather than riding up
+     under the header. Zero at 1440, so the reference frame is untouched. */
+  --size-hero-media-drop: calc(
+    var(--size-hero-media-y) + var(--size-board-drop)
+  );
+  --size-swirl-width: var(--raw-size-swirl-width);
+  --size-swirl-height: var(--raw-size-swirl-height);
+  --size-swirl-x: var(--raw-size-swirl-x);
+  --size-swirl-y: var(--raw-size-swirl-y);
+  --size-hero-copy-tablet: var(--raw-size-hero-copy-tablet);
+  --size-hero-script-x-phone: var(--raw-size-hero-script-x-phone);
+  --size-hero-script-y-phone: var(--raw-size-hero-script-y-phone);
+  --size-hero-script-x-tablet: var(--raw-size-hero-script-x-tablet);
+  --size-hero-script-y-tablet: var(--raw-size-hero-script-y-tablet);
+  --size-hero-script-x: var(--raw-size-hero-script-x);
+  --size-hero-script-y: var(--raw-size-hero-script-y);
+  --size-hero-copy-rise: var(--raw-size-hero-copy-rise);
+  --size-underline: var(--raw-size-underline);
+  --size-cap-16: var(--raw-size-cap-16);
+  --size-cta-block: var(--raw-size-cta-block);
+  --size-cap-12: var(--raw-size-cap-12);
+  --size-menu-intro: var(--raw-size-menu-intro);
+  --size-menu-intro-y: var(--raw-size-menu-intro-y);
+  --size-menu-lede: var(--raw-size-menu-lede);
+  --size-menu-lede-x: var(--raw-size-menu-lede-x);
+  --size-menu-lede-y: var(--raw-size-menu-lede-y);
+  --size-menu-cta: var(--raw-size-menu-cta);
+  --size-menu-cta-x: var(--raw-size-menu-cta-x);
+  --size-menu-cta-y: var(--raw-size-menu-cta-y);
+  --size-menu-cards-y: var(--raw-size-menu-cards-y);
+  --size-menu-card-height: var(--raw-size-menu-card-height);
+  --size-board-height: var(--raw-size-board-height);
+  /* How far the board drops inside a full-height section.
+     The section is the window's height; the board is 50rem. Whatever is left
+     over is surplus, and dropping the composition by it puts the bottom gutter
+     back on the board's own 40px while the top gains the slack instead — under a
+     fixed header that reads as air, at the bottom it read as a hole. Capped so a
+     very tall window does not push the whole block off the top of the eye line.
+     At 1440x800 the surplus is zero, so the reference frame is untouched. */
+  --size-board-drop: max(
+    0px,
+    min(calc(100lvh - var(--size-board-height)), 6.5rem)
+  );
+  --size-footer-height: var(--raw-size-footer-height);
+  --size-footer-tagline: var(--raw-size-footer-tagline);
+  --size-footer-tagline-y: var(--raw-size-footer-tagline-y);
+  --size-footer-nav-x: var(--raw-size-footer-nav-x);
+  --size-footer-contact-offset: var(--raw-size-footer-contact-offset);
+  --size-footer-right-block: var(--raw-size-footer-right-block);
+  --size-footer-contact-x: calc(100% - var(--size-footer-right-block));
+  --size-menu-still-lift: var(--raw-size-menu-still-lift);
+  --size-menu-still-scale: var(--raw-size-menu-still-scale);
+  --size-menu-still-max: var(--raw-size-menu-still-max);
+  --size-order-frame: var(--raw-size-order-frame);
+  --size-order-headline: var(--raw-size-order-headline);
+  --size-order-headline-y: var(--raw-size-order-headline-y);
+  --size-order-note: var(--raw-size-order-note);
+  --size-order-aside: var(--raw-size-order-aside);
+  --size-order-aside-gap: var(--raw-size-order-aside-gap);
+  --size-order-cta: var(--raw-size-order-cta);
+  --size-footer-col: var(--raw-size-footer-col);
+  --size-footer-rule-top: var(--raw-size-footer-rule-top);
+  --size-footer-row-y: var(--raw-size-footer-row-y);
+  --size-footer-rule-bottom: var(--raw-size-footer-rule-bottom);
+  --size-footer-legal-y: var(--raw-size-footer-legal-y);
+  --size-footer-address: var(--raw-size-footer-address);
+  --size-footer-address-b: var(--raw-size-footer-address-b);
+  --size-footer-address-c: var(--raw-size-footer-address-c);
+  --size-footer-divider-a: var(--raw-size-footer-divider-a);
+  --size-footer-divider-b: var(--raw-size-footer-divider-b);
+  --size-footer-dot: var(--raw-size-footer-dot);
+  --size-menu-receipt-width: var(--raw-size-menu-receipt-width);
+  --size-menu-receipt-height: var(--raw-size-menu-receipt-height);
+  --size-menu-receipt-x: var(--raw-size-menu-receipt-x);
+  --size-menu-receipt-y: var(--raw-size-menu-receipt-y);
+  --angle-menu-receipt: var(--raw-angle-menu-receipt);
+  --size-locations-dial: var(--raw-size-locations-dial);
+  --size-locations-dial-y: var(--raw-size-locations-dial-y);
+  --size-locations-cup-width: var(--raw-size-locations-cup-width);
+  --size-locations-cup-height: var(--raw-size-locations-cup-height);
+  --size-locations-cup-y: var(--raw-size-locations-cup-y);
+  --size-locations-list: var(--raw-size-locations-list);
+  --size-locations-list-y: var(--raw-size-locations-list-y);
+  --size-locations-hours-y: var(--raw-size-locations-hours-y);
+  --size-philosophy-headline: var(--raw-size-philosophy-headline);
+  --size-philosophy-headline-y: var(--raw-size-philosophy-headline-y);
+  --size-philosophy-cup-x: var(--raw-size-philosophy-cup-x);
+  --size-philosophy-cup-y: var(--raw-size-philosophy-cup-y);
+  --size-philosophy-cup-width: var(--raw-size-philosophy-cup-width);
+  --size-philosophy-cup-height: var(--raw-size-philosophy-cup-height);
+  --size-philosophy-lede: var(--raw-size-philosophy-lede);
+  --size-philosophy-lede-x: var(--raw-size-philosophy-lede-x);
+  --size-philosophy-lede-y: var(--raw-size-philosophy-lede-y);
+  --size-philosophy-claims: var(--raw-size-philosophy-claims);
+  --size-philosophy-claims-y: var(--raw-size-philosophy-claims-y);
+  --size-philosophy-eyebrow-y: var(--raw-size-philosophy-eyebrow-y);
+  --size-arrow-width: var(--raw-size-arrow-width);
+  --size-arrow-height: var(--raw-size-arrow-height);
+}
+
+/* ---------------------------------------------------------------------------
+   THEME BINDINGS — map semantic tokens into Tailwind namespaces.
+   Every entry is exactly `--<tw-namespace>-<role>: var(--<role>)`.
+   `inline` is required: it inlines the var() into each utility, so the
+   dark-mode overrides on the Tier 2 tokens above cascade. Binding a literal
+   here instead would freeze the value and break theming.
+
+   Only these namespaces generate utilities (verified against tailwindcss
+   v4.3.3): --color-* --spacing-* --radius-* --leading-* --tracking-* --text-*
+   --font-* --ease-* --breakpoint-* --container-* --shadow-* --blur-* --animate-*
+   NOTE: there is NO --duration-* namespace in v4 — `duration-fast` compiles to
+   nothing. Durations stay Tier 2 only and are used as duration-[var(--duration-fast)].
+   --------------------------------------------------------------------------- */
+@theme inline {
+  /* The design board's own width. Everything that must stay pixel-identical to
+     the reference is pinned with the `board:` variant rather than `xl:`, so the
+     1280-1439 range can be tuned without touching 1440. */
+  /* 90rem, not 1440px: Tailwind orders breakpoint buckets by the raw value and
+     cannot rank a px length against the rem-based defaults, so a px breakpoint
+     is emitted BEFORE `lg` and every `board:` utility loses to the `lg:` one it
+     is meant to override. In rem it sorts where it belongs, between xl and 2xl.
+     Media-query rem is always the initial 16px, so this is the same 1440. */
+  --breakpoint-board: 90rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-coffee-deep: var(--coffee-deep);
+  --color-coffee-crema: var(--coffee-crema);
+  --color-backdrop: var(--surface-backdrop);
+  --color-backdrop-soft: var(--surface-backdrop-soft);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-backdrop: var(--surface-inverse-backdrop);
+  --color-foreground-inverse: var(--foreground-inverse);
+
+  --font-sans: var(--font-onest);
+  /* Figma 1276:566 type stack — local faces loaded in app/layout.tsx. */
+  --font-display: var(--font-geist);
+  --font-mono: var(--font-space-mono);
+  --font-script: var(--font-allura);
+
+  --text-label: var(--font-size-label);
+  --text-base: var(--font-size-base);
+  --text-script: var(--font-size-script);
+  --text-fine: var(--font-size-fine);
+  --text-headline: var(--font-size-headline);
+  --text-display: var(--font-size-display);
+  --text-display-phone: var(--font-size-display-phone);
+  --text-display-hero-phone: var(--font-size-display-hero-phone);
+  --text-display-tablet: var(--font-size-display-tablet);
+  --text-headline-phone: var(--font-size-headline-phone);
+  --text-headline-tablet: var(--font-size-headline-tablet);
+  --text-script-phone: var(--font-size-script-phone);
+  --text-script-tablet: var(--font-size-script-tablet);
+  --text-display-hero-tablet: var(--font-size-display-hero-tablet);
+  --text-count-phone: var(--font-size-count-phone);
+  --text-count-tablet: var(--font-size-count-tablet);
+  --text-count: var(--font-size-count);
+  --text-lede-tablet: var(--font-size-lede-tablet);
+
+  /* Leading floor for clipped TextEngine reveals — see
+     obsidian/frontend/text-engine.md → "Alignment & line-height". */
+  --leading-display: 1.1;
+  --leading-flush: var(--line-height-flush);
+  --leading-headline: var(--line-height-headline);
+  --leading-copy: var(--line-height-copy);
+
+  --tracking-tight: var(--letter-spacing-tight);
+  --tracking-label: var(--letter-spacing-label);
+  --tracking-slash: var(--letter-spacing-slash);
+  --tracking-slash-space: var(--letter-spacing-slash-space);
+
+  --ease-entrance: cubic-bezier(0.2, 0, 0, 1);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  min-height: 100lvh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+@layer base {
+  /* Adaptive scaling grid — scales the root font-size with the viewport so a
+     rem-based layout stays proportional. Each breakpoint divides FONT_BASE
+     (16px) by the design base width its range was laid out at:
+       font-size: 16 * 100 / baseWidth  (vw)
+     Above the grid base width the AdaptiveGrid component takes over (scale-up).
+     Keep in sync with src/components/common/grid/grid.config.ts. */
+  html {
+    font-size: 16px;
+  }
+
+  /* Damped, not proportional. Straight 1.111111vw is 14.22px at 1280, which
+     reads small next to the 1440 reference; damping the shrink by half puts it
+     at 15.11px and leaves 1440 itself at exactly 16px, so the reference frame is
+     untouched. Same law the scale-up above 1440 already uses. */
+  @media (max-width: 1439.98px) {
+    html {
+      font-size: calc(16px - (1440px - 100vw) / 128.57);
+    }
+  }
+
+  /* The tablet range is NOT a scaled board — below the 1024 grid every block
+     lays itself out in flow, so there is no fixed coordinate system to keep
+     proportional and nothing to gain from shrinking the root with the window.
+     A straight 1.5625vw did shrink it, to 12px at 768: the type tokens cut for
+     this range ("64px on the 1024 base") arrived at 48, card captions at 9px
+     and the nav at 12. The range is held at the base the tokens were drawn
+     against instead, which is also what 1.5625vw already resolved to at the top
+     of the range, so the boundary is where it always was. */
+  @media (max-width: 1023.98px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 639.98px) {
+    html {
+      font-size: 4.444444vw; /* 16 * 100 / 360 */
+    }
+  }
+}
+
+@layer utilities {
+}
+
+@layer components {
+}
